@@ -162,6 +162,10 @@ write_word_on_leds_internal:
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; expects a buffer of 5 bytes at rgb_buf.
+; each byte represents 2 LEDs.
+; each nibble represents a single LED with 1 bit representing on/off, 1 bit red, 1 bit green, 1 bit blue, in that order.
+; note that the SK9822 LEDs I have use RBG ordering (contrary to the datasheet), so that is modified in this routine to use the more familiar RGB
 set_leds_from_buffer:
   push r30
   push r31
