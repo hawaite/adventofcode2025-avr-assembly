@@ -8,7 +8,7 @@
 
 #define fetched_byte_count r25
 #define dial_pos r24
-#define moves_to_make r1
+#define moves_to_make r6
 #define zero_landing_counter r26
 #define xl r26
 #define xh r27
@@ -46,7 +46,10 @@ day1:
 	ldi zh, 0x00 ; Z = current address in spi-flash. "for each char"
 
   ldi xl, 0x00
-  ldi xh, 0x00 ; X = zero crossings
+  ldi xh, 0x00 ; X = zero landings
+
+  clr r4
+  clr r5 ; we're using r5:r4 as a pseudo 16-bit register to hold the total zero crossings
 
 parse_row:
   ldi yl, lo8(row_buf)
@@ -99,7 +102,7 @@ is_newline_or_null:
   ldi yl, lo8(row_buf)
 	ldi yh, hi8(row_buf) ; reset the address of the row buffer
 
-  ; after this block I want the remaining move to be in r1
+  ; after this block I want the remaining move to be in moves_to_make (r6)
   cpi fetched_byte_count, 2
   breq one_digit
   cpi fetched_byte_count, 3
@@ -158,6 +161,10 @@ two_digit:
   rjmp after_remaining_move_parsed
 
 three_digit:
+  ; grab the hundreds position
+  ldd r6, Y+1
+  rcall add_pseudo_word ; we can just increment the zero passes by the hundredths place value
+
   ; grab tens position
   ldd moves_to_make, Y+2
   mov r2, moves_to_make ; take a copy of tens position
@@ -195,6 +202,10 @@ left_move_dec:
   dec dial_pos
   dec moves_to_make
 
+  cpi dial_pos, 0
+  brne left_move
+  rcall inc_pseudo_word ; increment the zero counts if we moved on to a zero
+
   ; unconditional jump back to the top
   rjmp left_move
 
@@ -216,5 +227,28 @@ right_move_inc:
   inc dial_pos
   dec moves_to_make
 
+  cpi dial_pos, 0
+  brne right_move
+  rcall inc_pseudo_word ; increment the zero counts if we moved on to a zero
+
   ; unconditional jump back to the top
   rjmp right_move
+
+add_pseudo_word:
+  ; add the value of r6 to the pseudo 16-bit register of r5:r4
+  add r4, r6
+  brcc add_pseudo_word_no_carry
+  inc r5 ; there was carry so inc high byte
+add_pseudo_word_no_carry:
+  ret
+
+inc_pseudo_word:
+  ; inc the value of the pseudo 16-bit register of r5:r4
+  push r16
+  ldi r16, 1
+  add r4, r16
+  brne inc_pseudo_word_no_carry
+  inc r5 ; there was carry so inc high byte
+inc_pseudo_word_no_carry:
+  pop r16
+  ret

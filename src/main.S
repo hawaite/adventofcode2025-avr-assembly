@@ -28,6 +28,13 @@ main:
   ; then use the fancy output function
   ; of maybe the base 4 function just writes to the LED buffer in one go.
 
+  ; zero landings in r27:r26
+  ; zero crossings in r5:r4
+  
+  ; move r5:r4 in to X for rendering to LEDs
+  mov r27, r5
+  mov r26, r4
+
   rcall write_x_reg_to_leds_buffer_in_base_4
 
   rcall set_leds_from_buffer
