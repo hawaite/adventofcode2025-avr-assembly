@@ -23,14 +23,8 @@ main:
 
   rcall day1
 
-  ; zero crossings remains in X-register (r26:r27)
-
-  ; need to translate to base 4
-  ; then use the fancy output function
-  ; of maybe the base 4 function just writes to the LED buffer in one go.
-
-  ; zero landings in r27:r26
-  ; zero crossings in r5:r4
+  ; zero landings (part 1 answer) remains in X-register (r27:r26)
+  ; zero crossings (part 2 answer) in r5:r4
   
   
 output_result:
@@ -44,7 +38,7 @@ output_result:
   push r27
   push r26
 
-  ; after 2 seconds write the part 2 answer to the LEDs
+  ; after 5 seconds write the part 2 answer to the LEDs
   ; move r5:r4 in to X for rendering to LEDs
   mov r27, r5
   mov r26, r4

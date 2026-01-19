@@ -10,35 +10,23 @@
 .extern rgb_buf
 
 leds_send_start_frame:
-  push r20
   push r16
-
-  ldi   r20, 4
-leds_send_start_frame_L1:
-  ldi   r16, 0x00 ;start
-  rcall spi_transfer
-  dec r20
-  brne leds_send_start_frame_L1
-
-  pop r16
-  pop r20
-  ret
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+  ldi   r16, 0x00 ;start frame
+  rjmp leds_send_frame
 leds_send_end_frame:
-  push r20
   push r16
+  ldi   r16, 0xFF ;end frame
+leds_send_frame:
+  push r20
 
   ldi   r20, 4
-leds_send_end_frame_L1:
-  ldi   r16, 0xFF ;end
+leds_send_frame_internal:
   rcall spi_transfer
   dec r20
-  brne leds_send_end_frame_L1
+  brne leds_send_frame_internal
 
-  pop r16
   pop r20
+  pop r16
   ret
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
