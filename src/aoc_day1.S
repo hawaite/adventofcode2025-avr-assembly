@@ -2,9 +2,7 @@
 #include "avr/io.h"
 
 .global day1
-.extern write_byte_on_leds
 .extern row_buf
-.extern two_second_delay
 
 #define fetched_byte_count r25
 #define dial_pos r24

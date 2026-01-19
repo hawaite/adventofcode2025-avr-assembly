@@ -2,7 +2,7 @@
 #include "avr/io.h"
 
 .global main
-.extern write_word_on_leds
+.extern five_second_delay
 .extern set_leds_from_buffer
 .extern write_x_reg_to_leds_buffer_in_base_4
 .extern day1
@@ -18,7 +18,8 @@ main:
   sbi PORTB, 4
 
   ; write default value of X-register (0x0000) to blank out LEDs
-  rcall write_word_on_leds
+  rcall write_x_reg_to_leds_buffer_in_base_4
+  rcall set_leds_from_buffer
 
   rcall day1
 
@@ -31,13 +32,30 @@ main:
   ; zero landings in r27:r26
   ; zero crossings in r5:r4
   
+  
+output_result:
+  ; output the part 1 answer to the LEDs
+  ldi r18, 0x01 ; indicate this is a part 1 answer
+  rcall write_x_reg_to_leds_buffer_in_base_4
+  
+  rcall set_leds_from_buffer
+  rcall five_second_delay
+
+  push r27
+  push r26
+
+  ; after 2 seconds write the part 2 answer to the LEDs
   ; move r5:r4 in to X for rendering to LEDs
   mov r27, r5
   mov r26, r4
 
+  ldi r18, 0x02 ; indicate this is a part 2 answer
   rcall write_x_reg_to_leds_buffer_in_base_4
 
-  rcall set_leds_from_buffer
+  ; can restore the state of X after the RGB buffer is set
+  pop r26
+  pop r27
 
-done:
-  rjmp done
+  rcall set_leds_from_buffer
+  rcall five_second_delay
+  rjmp output_result

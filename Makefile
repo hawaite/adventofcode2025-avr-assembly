@@ -1,9 +1,16 @@
+TESTING ?= 0
+
+SRCS := src/main.S src/spi.S src/leds.S src/external_flash.S src/timer.S src/aoc_day1.S src/memory_defs.S src/util.S
+ifeq ($(TESTING),1)
+SRCS += src/leds_testing.S
+endif
+
 all: main.hex
 
 main.hex: main.elf
 	avr-objcopy -O ihex -R .eeprom $^ $@
 
-main.elf: src/main.S src/spi.S src/leds.S src/external_flash.S src/timer.S src/part1.S src/memory_defs.S src/util.S
+main.elf: $(SRCS)
 	avr-gcc -mmcu=attiny85 $^ -o $@
 
 %.flash.bin: %.txt

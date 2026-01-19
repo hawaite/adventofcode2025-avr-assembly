@@ -10,7 +10,7 @@ write_x_reg_to_leds_buffer_in_base_4:
   ; 0 means off, 1 means red, 2 means green, 3 means blue
   ; set the LED buffer appropriately.
   ; left shift 2 through accumulator
-  push r18 ; r18 is temp
+  push r18 ; r18 is temp, also used to pass in what "part" of the solution this is
   push r19 ; r19 is a counter number of bytes left to process
   push r20 ; r20 is going to be where we build bytes to store to RAM
   push r21 ; r21 is the loop counter for building the two halfs of the byte
@@ -24,6 +24,21 @@ write_x_reg_to_leds_buffer_in_base_4:
 
   ; first 2 LEDs are in the first byte. setting 0 turns them off
   ldi r20, 0x00
+  cpi r18, 0x01 ; this is the solution to part 1. Light first LED purple.
+  breq set_part_1_indicator
+  cpi r18, 0x02 ; this is the solution to part 2. Light second LED purple.
+  breq set_part_2_indicator
+  rjmp after_first_2_leds ; just use 0x00 as a default
+
+set_part_1_indicator:
+  ldi r20, 0xD0
+  rjmp after_first_2_leds
+
+set_part_2_indicator:
+  ldi r20, 0x0D
+  rjmp after_first_2_leds
+
+after_first_2_leds:
   st Y+, r20
   ldi r19, 4
 
