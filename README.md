@@ -144,3 +144,12 @@ I did not know AVR assembly. I did have some experience of assembly but that was
 ## Advent of Code Day 01
 
 TODO
+
+![Part 1 result in base 2](./docs/img/base_2_part1_result.jpg)
+![Part 1 result in base 2 annotated](./docs/img/base_2_part1_result_annotated.jpg)
+
+![Part 1 result in base 4](./docs/img/base_4_part1_result.jpg)
+![Part 1 result in base 4 annotated](./docs/img/base_4_part1_result_annotated.jpg)
+
+![Part 2 result in base 4](./docs/img/base_4_part2_result.jpg)
+![Part 2 result in base 4 annotated](./docs/img/base_4_part2_result_annotated.jpg)
