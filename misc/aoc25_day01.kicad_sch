@@ -6,6 +6,8 @@
 	(paper "A4")
 	(title_block
 		(title "ATTiny85 Advent of Code Thing")
+		(rev "a")
+		(company "github.com/hawaite")
 	)
 	(lib_symbols
 		(symbol "74xx:74AHC541"
@@ -2565,7 +2567,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "74AHC541"
+		(property "Value" "74HC541N"
 			(at 68.1833 130.81 0)
 			(effects
 				(font
