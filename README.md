@@ -35,7 +35,7 @@ My parts organiser definitely contains more "processing" options than it probabl
 - A Softec Freescale HCS08 Starter kit board from back at university
 - A Zilog Z84 PDIP microprocessor
 - A couple of Atmel ATTiny85 microcontrollers
-- Mmaybe 6 different flavours of ESP32 board
+- Maybe 6 different flavours of ESP32 board
 
 I decided to go with the ATTiny85 for this one as it would present some interesting challenges.
 It is an 8-pin PDIP microcontroller from Atmel (now Microchip) with 8kb of program space, 512 bytes of RAM, 512 bytes of EEPROM, and an up to 20MHz clock speed, although we will be maxing out at 8MHz using the internal RC oscilator.
@@ -81,11 +81,11 @@ You can get these in loads of form factors from individual breakout boards with 
 
 ![Adafruit High Density Neopixel Stick](./docs/img/adafruit_neopixel_stick.jpg)
 
-Adafruit offer this really nice form-factor which is just 8 LEDS on a PCB with a bit for you to solver wires of a header on.
+Adafruit offer this really nice form-factor which is just 8 LEDS on a PCB with a bit for you to solder wires or a header on.
 
 However, NeoPixels annoy me slightly. The way they operate is that you need to send in a signal with a specific timing. If you're using the Adafruit neopixel library for Arduino then all is good, but I will not being using the arduino libraries. Thankfully, this behaviour irritated me a few years ago too, causing a search for a "better" RGB in the same "5050" size package. 
 
-That's when I came across the "SK9822". The SK9822 is an RGB LED that you can talk to over SPI. since it's SPI, we are in charge of the timing and can use standard SPI peripherals to talk to it. This also coincided with a time where I was interested in lerning proper PCB design, so I fired up KiCad and managed to create a similar design to the Adafruit Neopixel stick, but for SK9822 LEDs, and with more generous space to get a soldering iron between the LEDs. Why does my design include 10 LEDs instead of a more-traditional 8? Can't remember.
+That's when I came across the "SK9822". The SK9822 is an RGB LED that you can talk to over SPI. Since it's SPI, we are in charge of the timing and can use standard SPI peripherals built in to microcontrollers to talk to it. This also coincided with a time where I was interested in lerning proper PCB design, so I fired up KiCad and managed to create a similar design to the Adafruit Neopixel stick, but for SK9822 LEDs, and with more generous space to get a soldering iron between the LEDs. Why does my design include 10 LEDs instead of a more-traditional 8? Can't remember.
 
 ![SK9822 DotStar Stick](./docs/img/sk9822_led_stick.jpg)
 
@@ -97,7 +97,7 @@ This meant that we needed to come up with a way to hide signals from the pixel s
 The 74HC541N is an "non-inverting octal buffer". You have 8 input lines on one side, and have 8 output lines on the other side. There are two "output-enable" pins and if both of those are set low (active-low) then the input signal is replicated on the output. If either of the output-enable pins are "high" then the output become high-impedance. This meant we could pass the SPI clock and data lines in to the buffer, and then use the output-enable pins as a "chip-select" for the LEDs. If the output-enable pins are pulled low by the ATTiny85, the LEDs see the SPI signal, so we can talk to it. If the output-enable pins are pulled high by the ATTiny85, the LEDs never see either SPI signal. A lot of wasted breadboard space due to the large number of pins, but it works.
 
 #### Why do you have the 74HC541N? 
-I have 10 or more of them. Once upon a time I wanted to build a homebrew computer after become absolutely fascinated with the [Veronica 6502 by Quinn Dunki](https://hackaday.com/2012/01/04/backplane-and-mainboard-for-a-6502-computer/). On that machine 74HC541N chips are used as  gates for the address and data buses. I got as far as purchasing the Zilog Z80 I wanted to use as the processor and the pile of 74HC541N chips and no further. One day.
+I have 10 or more of them. Once upon a time I wanted to build a homebrew computer after becoming absolutely fascinated with the [Veronica 6502 by Quinn Dunki](https://hackaday.com/2012/01/04/backplane-and-mainboard-for-a-6502-computer/). On that machine 74HC541N chips are used as  gates for the address and data buses. I got as far as purchasing the Zilog Z80 I wanted to use as the processor and the pile of 74HC541N chips and no further. One day.
 
 ## Pulling it all together
 With:
@@ -128,9 +128,9 @@ I did not know AVR assembly. I did have some experience of assembly but that was
   - This was probably the biggest single jump. This was to validate:
     - that I could run an assembly file through avr-gcc to make a hex file
     - that I could write that hex to the chip via the Arduino
-    - that the clock speed was set correctly by checking that what should be a 2 second delay is in fact a 2 second delay
+    - that the clock speed was set correctly by checking that what should be a 2 second delay is in fact a 2 second delay. Turns out clock was being divided by 8 in because of the fuses set so delays were all 8 times longer than they should have been.
 - Light an LED on the SPI LED stick
-  - This is the point where we needed to add a subroutine for talking to SPI devices. Thankfully, page 111 of the ATTiny85 just gives you the full subroutine.
+  - This is the point where we needed to add a subroutine for talking to SPI devices. Thankfully, page 111 of the ATTiny85 datasheet just gives you the full subroutine.
 - Write a byte in binary out on the SPI LED stick
   - excellent for debugging as at any point in the program I could now output the contents of a register
 - Write a word in binary out on the SPI LED stick
@@ -144,16 +144,16 @@ I did not know AVR assembly. I did have some experience of assembly but that was
 ## Advent of Code Day 01
 
 ### Part 1
-At the point where I was starting to write the part 1 subroutine I still couldnt really from-scrath visualize how an assembly function was going to hang together, so I ![wrote the function in python](./day1_cursed.py) but with limitations of the ATTiny85: no multiplication, no division, math through bitshifting, and working within a tight RAM buffers. This was also the point where I decided to just go with the algorithm where we execute the number of ticks rather than trying to be clever with modulus. Dial moves would be much simler, using only `inc` and `dec` opcodes. I did identify an optimization where in part 1 you can actually completely ignore the hundredths digit as the dial is 100 positions, so 423 ticks is the same as 23 ticks, meaning at most we would need to tick 99 times.
+At the point where I was starting to write the part 1 subroutine I still couldnt really from-scrath visualize how an assembly function was going to hang together, so I ![wrote the function in python](./day1_cursed.py) but with limitations of the ATTiny85: no multiplication, no division, math through bitshifting, and working within tiny buffers. This was also the point where I decided to just go with the algorithm where we execute the number of ticks rather than trying to be clever with modulus. Dial moves would be much simler, using only `inc` and `dec` opcodes. I did identify an optimization where in part 1 you can actually completely ignore the hundredths digit as the dial is 100 positions, so 423 ticks is the same as 23 ticks, meaning at most we would need to tick 99 times.
 
 The ATTiny offers X, Y, and Z registers which are 2 8-bit registers stuck together that can behave like individual 16-bit registers. The X register was used to hold the number of times we landed on the 0 dial position as it would almost definitely exceed 255, and the plan was to leave this in the X-register on completion so that the `write_word_to_leds` subroutine, which already takes its input from the X-register, could render the answer on the LED stick. The result looked like this: 
 ![Part 1 result in base 2 annotated](./docs/img/base_2_part1_result_annotated.jpg)
 
-This is an unsatifying conclusion. Althought 0b1111111111 or 1023 IS the correct answer for my particular input file, it looks like it's broken and just lighting all LEDs. This also raises a proble mfor part 2. If the number of zero LANDINGS maxes out the display, then the number of zero CROSSINGS is absolutely going to overflow the 10-bits of the display.
+This is an unsatifying conclusion. Althought 0b1111111111 or 1023 IS the correct answer for my particular input file, it looks like it's broken and just lighting all LEDs. This also raises a problem for part 2. If the number of zero LANDINGS maxes out the display, then the number of zero CROSSINGS is absolutely going to overflow the 10-bits of the display.
 
 Except that we havent hit max-capacity on the display. The `write_word_to_leds` subroutine only uses off and green to represent 0 and 1 as this was convenient for binary values. If we use off, red, green, and blue to represent digits then we can represent the result in base-4, or a maximum value of 1048575, far exceeding the 16-bit register limit of 32767. To represent the maximum 16-bit value of 0xFFFF we actually only need 8 of the LEDs, leaving 2 for other purposes.
 
-I wrote a subroutine that would take the result of part 1 in the X-register, and convert it to a base-4 representation in the 5-byte RGB buffer in RAM. The first two LEDs could then be used to indicate if it is showing the result of the part 1 solution or the part 2 solution.
+I wrote a subroutine that would take the result of part 1 in the X-register, and convert it to a base-4 representation in the 5-byte RGB buffer in RAM. The first two LEDs could then be used to indicate if it is showing the result of the part 1 solution or the part 2 solution in purple.
 
 Turns out the answer is also rather boring in base 4, but at least it doesnt fill the display:
 ![Part 1 result in base 4 annotated](./docs/img/base_4_part1_result_annotated.jpg)
@@ -168,7 +168,7 @@ For part 1 we were using:
 - Y for holding an index in to a buffer in RAM holding the current input line we are processing
 - Z for holding the current address we are accessing in the EEPROM
 
-X and Z needed to be 16-bit numbers, so I would have had to replace Y with an 8-bit register and unfortunately all the useful load and store opcodes want ot use X/Y/Z. This would mean we'd need to make a new 16-bit reigster. I went with r5 for the high-byte and r4 for the low-byte, matching the pattern used by the X/Y/Z registers where the high-byte goes in the higher-numbered register. We'd need some subroutines to work with the new 16-bit register: add and inc.
+X and Z needed to be 16-bit numbers, so I would have had to replace Y with an 8-bit register and unfortunately all the useful load and store opcodes want ot use X/Y/Z. This would mean we'd need to make a new 16-bit register. I went with r5 for the high-byte and r4 for the low-byte, matching the pattern used by the X/Y/Z registers where the high-byte goes in the higher-numbered register. We'd need some subroutines to work with the new 16-bit register: add and inc.
 
 Add would end up looking like this:
 ```
@@ -195,7 +195,7 @@ inc_pseudo_word_no_carry:
 
 In theory this increments the low-byte, and if it overflows then we increment the high-byte just like the add operation. Same as the add operation but with even fewer input registers. Simple.
 
-Incorrect. This would not play. I burned an hour on debugging this before resulting to copilot, which very quickly identified that my issue was that the `inc` opcode does not set the carry-flag on 8-bit overflow, so r5 was never incremented. Solution was the unsophisticated solution of making a copy of the addition code but using a temporary register loaded with the literal value "1" as the second operand.
+Incorrect. This would not play. I burned an hour on debugging this before resulting to copilot, which very quickly identified that my issue was that the `inc` opcode does not set the carry-flag on 8-bit overflow, so r5 was never incremented. Solution was the unsophisticated option of making a copy of the addition code but using a temporary register loaded with the literal value "1" as the second operand.
 
 At this point we now have a subroute that will, upon completion:
 - Have stored the number of zero landings in the X-register (part 1 answer)
