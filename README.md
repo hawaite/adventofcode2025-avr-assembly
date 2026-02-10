@@ -143,13 +143,128 @@ I did not know AVR assembly. I did have some experience of assembly but that was
 
 ## Advent of Code Day 01
 
-TODO
+### Part 1
+At the point where I was starting to write the part 1 subroutine I still couldnt really from-scrath visualize how an assembly function was going to hang together, so I ![wrote the function in python](./day1_cursed.py) but with limitations of the ATTiny85: no multiplication, no division, math through bitshifting, and working within a tight RAM buffers. This was also the point where I decided to just go with the algorithm where we execute the number of ticks rather than trying to be clever with modulus. Dial moves would be much simler, using only `inc` and `dec` opcodes. I did identify an optimization where in part 1 you can actually completely ignore the hundredths digit as the dial is 100 positions, so 423 ticks is the same as 23 ticks, meaning at most we would need to tick 99 times.
 
-![Part 1 result in base 2](./docs/img/base_2_part1_result.jpg)
+The ATTiny offers X, Y, and Z registers which are 2 8-bit registers stuck together that can behave like individual 16-bit registers. The X register was used to hold the number of times we landed on the 0 dial position as it would almost definitely exceed 255, and the plan was to leave this in the X-register on completion so that the `write_word_to_leds` subroutine, which already takes its input from the X-register, could render the answer on the LED stick. The result looked like this: 
 ![Part 1 result in base 2 annotated](./docs/img/base_2_part1_result_annotated.jpg)
 
-![Part 1 result in base 4](./docs/img/base_4_part1_result.jpg)
+This is an unsatifying conclusion. Althought 0b1111111111 or 1023 IS the correct answer for my particular input file, it looks like it's broken and just lighting all LEDs. This also raises a proble mfor part 2. If the number of zero LANDINGS maxes out the display, then the number of zero CROSSINGS is absolutely going to overflow the 10-bits of the display.
+
+Except that we havent hit max-capacity on the display. The `write_word_to_leds` subroutine only uses off and green to represent 0 and 1 as this was convenient for binary values. If we use off, red, green, and blue to represent digits then we can represent the result in base-4, or a maximum value of 1048575, far exceeding the 16-bit register limit of 32767. To represent the maximum 16-bit value of 0xFFFF we actually only need 8 of the LEDs, leaving 2 for other purposes.
+
+I wrote a subroutine that would take the result of part 1 in the X-register, and convert it to a base-4 representation in the 5-byte RGB buffer in RAM. The first two LEDs could then be used to indicate if it is showing the result of the part 1 solution or the part 2 solution.
+
+Turns out the answer is also rather boring in base 4, but at least it doesnt fill the display:
 ![Part 1 result in base 4 annotated](./docs/img/base_4_part1_result_annotated.jpg)
 
-![Part 2 result in base 4](./docs/img/base_4_part2_result.jpg)
+Thankfully, part 2 would look more interesting.
+
+### Part 2
+When you are just incrementally counting ticks for this problem the solution for part 2 becomes semi-trivial. On each tick check if you are on a 0 and increment a counter if you are. That's it. New problem: we have just run out of 16-bit registers to hold the number of zero crossings.
+
+For part 1 we were using:
+- X for holding the number of zero landings (the part 1 answer)
+- Y for holding an index in to a buffer in RAM holding the current input line we are processing
+- Z for holding the current address we are accessing in the EEPROM
+
+X and Z needed to be 16-bit numbers, so I would have had to replace Y with an 8-bit register and unfortunately all the useful load and store opcodes want ot use X/Y/Z. This would mean we'd need to make a new 16-bit reigster. I went with r5 for the high-byte and r4 for the low-byte, matching the pattern used by the X/Y/Z registers where the high-byte goes in the higher-numbered register. We'd need some subroutines to work with the new 16-bit register: add and inc.
+
+Add would end up looking like this:
+```
+add_pseudo_word:
+  ; add the value of r6 to the pseudo 16-bit register of r5:r4
+  add r4, r6
+  brcc add_pseudo_word_no_carry
+  inc r5 ; there was carry so inc high byte
+add_pseudo_word_no_carry:
+  ret
+```
+
+`brcc` is "branch if the carry-flag is cleared". If the result of adding r6 to r4 resulted in an 8-bit overflow then the carry-flag is set and we increment r5. Otherwise, dont bother incrementing r5. This worked as expected. My next problem was implementing the `inc_pseudo_word` subroutine:
+
+```
+inc_pseudo_word:
+  ; inc the value of the pseudo 16-bit register of r5:r4
+  inc r4
+  brcc inc_pseudo_word_no_carry
+  inc r5 ; there was carry so inc high byte
+inc_pseudo_word_no_carry:
+  ret
+```
+
+In theory this increments the low-byte, and if it overflows then we increment the high-byte just like the add operation. Same as the add operation but with even fewer input registers. Simple.
+
+Incorrect. This would not play. I burned an hour on debugging this before resulting to copilot, which very quickly identified that my issue was that the `inc` opcode does not set the carry-flag on 8-bit overflow, so r5 was never incremented. Solution was the unsophisticated solution of making a copy of the addition code but using a temporary register loaded with the literal value "1" as the second operand.
+
+At this point we now have a subroute that will, upon completion:
+- Have stored the number of zero landings in the X-register (part 1 answer)
+- Have stored the number of zero crossings in the r5:r4 register pair (part 2 answers)
+
+We already have the code for converting a 16-bit value to base 4 and showing it on the LEDs meaning the final main loop became this:
+```
+forever:
+  ; write value of X to LED buffer
+  ; set LEDs from buffer
+  ; wait 5 seconds
+  ; stash value of X
+  ; move r5:r4 in to X
+  ; write value of X to the LED buffer
+  ; set LEDs from buffer
+  ; wait 5 seconds
+  ; restore original value of X
+  ; jump to forever
+```
+
 ![Part 2 result in base 4 annotated](./docs/img/base_4_part2_result_annotated.jpg)
+
+## How Does it Run?
+
+### Program Size
+As of the 28th of January the assembled program uses a grand total of 658 bytes of the program flash
+![final Program Size](./docs/img/final_byte_count.png)
+
+### RAM Usage
+I managed to get away with only using 9 bytes of RAM:
+- 5 bytes for a buffer representing the LED state
+- 4 bytes to hold the current line read from the EEPROM
+
+Fairly sure all of that could be moved to registers for a memory usage of 0 bytes.
+
+### Execution Time
+
+Finally I'd like to understand what the execution time and execution profile of this thing is. For this we can use the suspiciously-cheap 24MHz logic analyzer. With this we can listen in on the SPI lines to identify whats going on. The program manually clears the LEDs, immediately calculates the day 1 answers, and the sets the result on the LEDs, meaning calculation time is just the bit between the two LEDs communications. That's good enough granularity for this.
+
+We can use pulseview to orchestrate the capture and then evaluate the captured trace:
+![Complete Execution Capture](./docs/img/complete_execution_capture.png)
+
+If we measure the time between the LED "clear" and the LED "set" signals we can see the rough execution time is 647ms:
+![Total Execution Time](./docs/img/total_execution_time.png)
+
+Would be good to know where all that execution time went as even though we went with an inefficient algorithm thats still slower than I would have guessed.
+
+SPI clock was measured or having a frequency around 4MHz which is half of clock frequency, so not a problem of slow SPI clock.
+
+We can see how long setting the LED pattern takes from the trace and see that its around 193 microseconds, or 2 tenths of a millisecond:
+![LED Set Time](./docs/img/led_set_time.png)
+
+Also visible on this trace is that either:
+- The program is wrong and sending `0x00 0xFF 0xFF 0xFF` as the LED stick 'start frame' when it should be `0x00 0x00 0x00 0x00` but for some reason it's still accepting it
+- Something went wrong with the capture
+- I did something incorrect in pulseview setup
+- A little bit of all of the above
+
+Something going wrong with the capture is less likely though as we can see that the EEPROM commands are being correctly decoded:
+![EEPROM Byte Read](./docs/img/eeprom_byte_read_time.png)
+
+Here you can see the decoded `0x03 + 24-bit address` command which is taking around 17 microseconds to write out with the next read happening very soon after.
+If we say that the program does absolutely nothing other than read bytes from the EEPROM, to read 17.2k characters from EEPROM at 17 microseconds a go would be 292ms. So almost exactly half the time spend reading from EEPROM and half the time actually doing processing.
+
+Final observations can be found on this screenshot:
+![Zoomed Execution Capture](./docs/img/zoomed_execution_capture_annotated.png)
+
+You can clearly see where the processing occurs in between the EEPROM fetches, meaning you can also see how many character it fetched before starting processing.
+
+Another interesting observation, but obvious in hindsight, is that the processing time between the EEPROM blocks depends entirely on the number fetched. The gap after R32 is shorter than the gap after R49, and the gap after L6 is tiny. This is just because of the inefficient algorithm I chose where execution time is tied directly to the input number.
+
+Good enough.
